@@ -16,7 +16,7 @@ from viberbot.api.messages import (
 )
 
 #engine = create_engine('sqlite:///mydb.db', echo=True)
-engine = create_engine('postgres://swjfygeaqoszbb:5793a39663698b2ab1f0d17275d4873089de8e76657f7172ccb3c40d810eba67@ec2-176-34-97-213.eu-west-1.compute.amazonaws.com:5432/d6gu081g5pfh3p', echo=True)
+engine = create_engine('postgres://urazwduedfdpiz:fafc8d1270cdd33a32a2bf8ad9bc2e283ab4a6957ac7445d1d20643dfea12033@ec2-54-246-89-234.eu-west-1.compute.amazonaws.com:5432/d9s8si78o98p0k', echo=True)
 Base = declarative_base()
 Session = sessionmaker(engine)
 
@@ -111,11 +111,11 @@ def send_question(viber_id):
         select_query2 = session.query(Learning.word).filter(Learning.user_id == select_query[2]).filter(
             Learning.right_answer >= settings[1]).count()
         session.close()
-        return TextMessage(text=f'У вас {temp_correct_answers} верных из {settings[0]}. '
-                                f'Выучено: {select_query2} слов. '
-                                f'Осталось выучить {50 - select_query2} слов. '
-                                f'Время прохождения теста: {str(select_query[3])[:16]}. '
-                                f'Хотите ещё раз попробовать?',
+        return TextMessage(text=f'Правильных ответов {temp_correct_answers} из {settings[0]}. '
+                                f'Выучено {select_query2} слов. '
+                                f'Невыученных слов – {50 - select_query2}. '
+                                f'Время прохождения раунда: {str(select_query[3])[:16]}. '
+                                f'Ешё раз?',
                            keyboard=KEYBOARD1, tracking_data='tracking_data')
     else:
         temp_answers = []
@@ -210,7 +210,7 @@ def update_time(viber_id):
     update_query.dt_last_answer = datetime.utcnow()
     session.commit()
     session.close()
-    return TextMessage(text='Хорошо, напомню тебе чуть позже!')
+    return TextMessage(text='Напоминание установлено.')
 
 
 def get_question_number(viber_id):
@@ -223,7 +223,7 @@ def get_question_number(viber_id):
 app = Flask(__name__)
 
 bot_configuration = BotConfiguration(
-    name='MyLearnEnglishBot4',
+    name='LearnEnglishViaPython',
     avatar='http://viber.com/avatar.jpg',
     auth_token=TOKEN
 )
@@ -240,7 +240,7 @@ def hello():
 @app.route('/settings')
 def settings():
     session = Session()
-    select_query = session.query(Settings.remind_time, Settings.count_words, Settings.count_to_learn).one()
+    select_query = session.query(Settings.remind_interval, Settings.num_questions, Settings.num_learn).one()
     session.close()
     return render_template('settings.html', remind_time=select_query[0], count_words=select_query[1],
                            count_to_learn=select_query[2])
@@ -323,7 +323,7 @@ def incoming():
         new_current_id = viber_request.user.id
         add_user(new_current_id)
         viber.send_messages(viber_request.user.id, [
-            TextMessage(text='Привет! Этот бот предназначен для заучивания английских слов! Нажимай кнопку "Поехали"!',
+            TextMessage(text='Привет! Изучай английские слова вместе с этим ботом! Начнем?',
                         keyboard=KEYBOARD1, tracking_data='tracking_data')
         ])
     if isinstance(viber_request, ViberMessageRequest):
@@ -336,7 +336,7 @@ def incoming():
                 text = message.text
                 print(text)
                 # чтение введёного текста
-                if text == "Поехали!":
+                if text == "Начнем!":
                     bot_response = send_question(current_id)
                     viber.send_messages(current_id, bot_response)
                 elif text == "Показать пример":
